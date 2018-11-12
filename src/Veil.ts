@@ -6,6 +6,7 @@ import { Provider, Order as ZeroExOrder } from "@0xproject/order-utils";
 import authenticate from "./auth";
 import graphqlFetch from "./graphqlFetch";
 import { signOrder } from "./0x";
+import fetch from "node-fetch";
 
 interface IMarket {
   slug: string;
@@ -109,6 +110,19 @@ export default class Veil {
     console.log("ADDRESS", this.address);
     this.jwt = await authenticate(this.provider, this.apiHost, this.address);
     return true;
+  }
+
+  async getMarkets(
+    filter: { index?: string; status?: "open" | "resolved" } = {}
+  ) {
+    let url = `${this.apiHost}/api/v1/markets?`;
+    if (filter.index) url = `${url}index=${filter.index}&`;
+    if (filter.status) url = `${url}status=${filter.status}&`;
+    const response = await fetch(url);
+    const json = await response.json();
+    if (json.errors)
+      throw new Error("Error getting markets: " + JSON.stringify(json.errors));
+    return json.data;
   }
 
   async setMarket(marketSlug: string) {
