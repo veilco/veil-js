@@ -291,7 +291,7 @@ export default class Veil {
     return market.orders;
   }
 
-  async getDataFeed(_market: IMarket) {
+  async getDataFeed(_dataFeedSlug: string) {
     const { dataFeed } = await graphqlFetch<{ dataFeed: IDataFeed }>(
       this.feedsApiHost,
       `
@@ -307,12 +307,12 @@ export default class Veil {
           }
         }
       }`,
-      { name: _market.index, scope: "month" }
+      { name: _dataFeedSlug, scope: "month" }
     );
     return dataFeed;
   }
 
-  getRange(_market: IMarket): [number, number] {
+  getScalarRange(_market: IMarket): [number, number] {
     if (!_market.minPrice || !_market.maxPrice)
       throw new Error("Market does not have min and max price");
     return [
