@@ -107,7 +107,6 @@ export default class Veil {
   }
 
   async authenticate() {
-    console.log("ADDRESS", this.address);
     this.jwt = await authenticate(this.provider, this.apiHost, this.address);
     return true;
   }
@@ -291,7 +290,7 @@ export default class Veil {
     return market.orders;
   }
 
-  async getDataFeed(_dataFeedSlug: string) {
+  async getDataFeed(_dataFeedSlug: string, _scope: "day" | "month" = "month") {
     const { dataFeed } = await graphqlFetch<{ dataFeed: IDataFeed }>(
       this.feedsApiHost,
       `
@@ -307,7 +306,7 @@ export default class Veil {
           }
         }
       }`,
-      { name: _dataFeedSlug, scope: "month" }
+      { name: _dataFeedSlug, scope: _scope }
     );
     return dataFeed;
   }

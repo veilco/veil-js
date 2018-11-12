@@ -21,7 +21,6 @@ export async function signOrder(
     takerFee: new BigNumber(zeroExOrder.takerFee),
     takerAssetAmount: new BigNumber(zeroExOrder.takerAssetAmount)
   });
-  console.log(orderHash);
   const signature = await signatureUtils.ecSignOrderHashAsync(
     provider,
     orderHash,
