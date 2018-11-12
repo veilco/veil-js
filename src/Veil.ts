@@ -125,13 +125,7 @@ export default class Veil {
     return json.data;
   }
 
-  async setMarket(marketSlug: string) {
-    this.marketSlug = marketSlug;
-    this.market = await this.getMarket();
-  }
-
   async createOrder(quote: IQuote, options: { postOnly?: boolean } = {}) {
-    this.requireMarket();
     if (!this.isSetup) await this.setup();
 
     const signedOrder = await signOrder(this.provider, quote.zeroExOrder);
@@ -142,13 +136,13 @@ export default class Veil {
     };
     while (true) {
       try {
-        const { createOrderFromQuote } = await graphqlFetch<{
-          createOrderFromQuote: IOrder;
+        const { createOrder } = await graphqlFetch<{
+          createOrder: IOrder;
         }>(
           this.apiHost,
           `
-          mutation CreateOrder($params: CreateOrderFromQuoteInput!) {
-            createOrderFromQuote(params: $params) {
+          mutation CreateOrder($params: CreateOrderInput!) {
+            createOrder(params: $params) {
               uid
               status
               tokenAmount
@@ -158,7 +152,7 @@ export default class Veil {
           { params },
           this.jwt
         );
-        return createOrderFromQuote;
+        return createOrder;
       } catch (e) {
         if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
           await this.authenticate();
@@ -168,26 +162,24 @@ export default class Veil {
   }
 
   async createQuote(
+    _market: IMarket,
     side: "buy" | "sell",
     tokenType: "long" | "short",
     amount: number | BigNumber,
     price: number | BigNumber
   ) {
-    this.requireMarket();
     if (!this.isSetup) await this.setup();
 
     const zero = new BigNumber(0);
-    const numTicks = new BigNumber(this.market.numTicks);
-    if (typeof amount === "number")
-      amount = toShares(amount, this.market.numTicks);
+    const numTicks = new BigNumber(_market.numTicks);
+    if (typeof amount === "number") amount = toShares(amount, _market.numTicks);
     if (typeof price === "number")
       price = new BigNumber(price.toString()).mul(numTicks);
 
     if (price.lt(zero)) price = zero;
     if (price.gt(numTicks)) price = numTicks;
     price = price.round();
-    const token =
-      tokenType === "long" ? this.market.longToken : this.market.shortToken;
+    const token = tokenType === "long" ? _market.longToken : _market.shortToken;
 
     const params = {
       side,
@@ -223,7 +215,6 @@ export default class Veil {
   }
 
   async cancelOrder(uid: string) {
-    this.requireMarket();
     if (!this.isSetup) await this.setup();
 
     while (true) {
@@ -251,8 +242,7 @@ export default class Veil {
     }
   }
 
-  async getUserOrders() {
-    this.requireMarket();
+  async getUserOrders(_market: IMarket) {
     if (!this.isSetup) await this.setup();
 
     while (true) {
@@ -270,7 +260,7 @@ export default class Veil {
                 status
               }
             }`,
-          { slug: this.marketSlug },
+          { slug: _market.slug },
           this.jwt
         );
         return userOrders;
@@ -282,8 +272,7 @@ export default class Veil {
     }
   }
 
-  async getOrderBook() {
-    this.requireMarket();
+  async getOrderBook(_market: IMarket) {
     const { market } = await graphqlFetch<{ market: IMarket }>(
       this.apiHost,
       `
@@ -297,13 +286,12 @@ export default class Veil {
           }
         }
       }`,
-      { slug: this.marketSlug }
+      { slug: _market.slug }
     );
     return market.orders;
   }
 
-  async getDataFeed() {
-    this.requireMarket();
+  async getDataFeed(_market: IMarket) {
     const { dataFeed } = await graphqlFetch<{ dataFeed: IDataFeed }>(
       this.feedsApiHost,
       `
@@ -319,20 +307,21 @@ export default class Veil {
           }
         }
       }`,
-      { name: this.market.index, scope: "month" }
+      { name: _market.index, scope: "month" }
     );
     return dataFeed;
   }
 
-  getRange(): [number, number] {
+  getRange(_market: IMarket): [number, number] {
+    if (!_market.minPrice || !_market.maxPrice)
+      throw new Error("Market does not have min and max price");
     return [
-      fromWei(this.market.minPrice).toNumber(),
-      fromWei(this.market.maxPrice).toNumber()
+      fromWei(_market.minPrice).toNumber(),
+      fromWei(_market.maxPrice).toNumber()
     ];
   }
 
-  async getMarket() {
-    if (!this.marketSlug) throw new Error("Market slug not set");
+  async getMarket(_slug: string) {
     const { market } = await graphqlFetch<{ market: IMarket }>(
       this.apiHost,
       `
@@ -350,9 +339,9 @@ export default class Veil {
           limitPrice
         }
       }`,
-      { slug: this.marketSlug }
+      { slug: _slug }
     );
-    if (!market) throw new Error("Market not found: " + this.marketSlug);
+    if (!market) throw new Error(`Market not found: ${_slug}`);
     return market;
   }
 
@@ -366,10 +355,5 @@ export default class Veil {
     );
     this.takerAddress = takerAddress;
     return true;
-  }
-
-  protected requireMarket() {
-    if (!this.market)
-      throw new Error("You must set a market before calling this method");
   }
 }
