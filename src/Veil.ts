@@ -1,4 +1,5 @@
 require("babel-polyfill");
+const { camelizeKeys } = require("humps");
 import some = require("lodash/some");
 import getProvider from "./provider";
 import { BigNumber } from "@0xproject/utils";
@@ -20,6 +21,7 @@ interface IMarket {
   orders?: IOrder[];
   index: string;
   limitPrice: string;
+  type: string;
 }
 
 interface IOrder {
@@ -121,7 +123,7 @@ export default class Veil {
     const json = await response.json();
     if (json.errors)
       throw new Error("Error getting markets: " + JSON.stringify(json.errors));
-    return json.data;
+    return json.data.map((market: object) => camelizeKeys(market));
   }
 
   async createOrder(quote: IQuote, options: { postOnly?: boolean } = {}) {
