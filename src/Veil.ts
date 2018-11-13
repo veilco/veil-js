@@ -52,7 +52,6 @@ interface IDataFeed {
 }
 
 const API_HOST_DEFAULT = "https://api.kovan.veil.market";
-const FEEDS_API_HOST_DEFAULT = "https://api.index.veil.market";
 
 const TEN_18 = new BigNumber(10).toPower(18);
 export function toWei(amount: number) {
@@ -81,7 +80,6 @@ export function fromShares(
 export default class Veil {
   provider: Provider;
   apiHost: string;
-  feedsApiHost: string;
   address: string;
   jwt: string;
   takerAddress: string;
@@ -93,13 +91,11 @@ export default class Veil {
     jsonRpcUrl: string,
     mnemonic: string,
     address: string,
-    apiHost: string = API_HOST_DEFAULT,
-    feedsApiHost: string = FEEDS_API_HOST_DEFAULT
+    apiHost: string = API_HOST_DEFAULT
   ) {
     this.provider = getProvider(mnemonic, jsonRpcUrl);
     this.address = address.toLowerCase();
     this.apiHost = apiHost;
-    this.feedsApiHost = feedsApiHost;
   }
 
   async setup() {
@@ -294,7 +290,7 @@ export default class Veil {
 
   async getDataFeed(_dataFeedSlug: string, _scope: "day" | "month" = "month") {
     const { dataFeed } = await graphqlFetch<{ dataFeed: IDataFeed }>(
-      this.feedsApiHost,
+      this.apiHost,
       `
       query GetVeilDataFeed($name: String!, $scope: DataFeedScope)  {
         dataFeed(name: $name) {
