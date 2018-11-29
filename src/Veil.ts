@@ -93,12 +93,12 @@ export default class Veil {
   isSetup = false;
 
   constructor(
-    mnemonic: string,
-    address: string,
+    mnemonic?: string,
+    address?: string,
     apiHost: string = API_HOST_DEFAULT
   ) {
-    this.provider = getProvider(mnemonic);
-    this.address = address.toLowerCase();
+    if (mnemonic) this.provider = getProvider(mnemonic);
+    if (address) this.address = address.toLowerCase();
     this.apiHost = apiHost;
   }
 
@@ -128,6 +128,10 @@ export default class Veil {
   }
 
   async authenticate() {
+    if (!this.provider || !this.address)
+      throw new VeilError([
+        "You tried calling an authenticated method without passing a mnemonic and address to the Veil constructor"
+      ]);
     const challenge = await this.createSessionChallenge();
     const web3 = new Web3Wrapper(this.provider);
     const signature = await web3.signMessageAsync(
@@ -160,12 +164,13 @@ export default class Veil {
   }
 
   async getMarkets(
-    filter: { index?: string; status?: "open" | "resolved" } = {}
+    params: {
+      channel?: string;
+      status?: "open" | "resolved";
+      page?: number;
+    } = {}
   ) {
     const url = `${this.apiHost}/api/v1/markets`;
-    const params: { index?: string; status?: "open" | "resolved" } = {};
-    if (filter.index) params.index = filter.index;
-    if (filter.status) params.status = filter.status;
     return await this.fetch(url, params);
   }
 
@@ -268,7 +273,7 @@ export default class Veil {
     }
   }
 
-  async getOrderBook(market: Market) {
+  async getOrders(market: Market) {
     const url = `${this.apiHost}/api/v1/markets/${market.slug}/orders`;
     const orders: Order[] = await this.fetch(url);
     return orders;
