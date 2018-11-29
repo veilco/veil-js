@@ -1,12 +1,11 @@
-import { BigNumber } from "@0xproject/utils";
+import { BigNumber } from "@0x/utils";
 import {
   signatureUtils,
-  SignerType,
   orderHashUtils,
   Order,
   SignedOrder,
   Provider
-} from "@0xproject/order-utils";
+} from "@0x/order-utils";
 
 export async function signOrder(
   provider: Provider,
@@ -21,11 +20,10 @@ export async function signOrder(
     takerFee: new BigNumber(zeroExOrder.takerFee),
     takerAssetAmount: new BigNumber(zeroExOrder.takerAssetAmount)
   });
-  const signature = await signatureUtils.ecSignOrderHashAsync(
+  const signature = await signatureUtils.ecSignHashAsync(
     provider,
     orderHash,
-    zeroExOrder.makerAddress,
-    SignerType.Default // TODO: support other signatures?
+    zeroExOrder.makerAddress
   );
 
   // Append signature to order
