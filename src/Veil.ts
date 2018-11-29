@@ -1,12 +1,12 @@
 const { camelizeKeys } = require("humps");
 import some = require("lodash/some");
 import getProvider from "./provider";
-import { BigNumber } from "@0xproject/utils";
-import { Provider, Order as ZeroExOrder } from "@0xproject/order-utils";
+import { BigNumber } from "@0x/utils";
+import { Provider, Order as ZeroExOrder } from "@0x/order-utils";
 import { signOrder } from "./0x";
 import fetch from "node-fetch";
 import { VeilError } from "./errors";
-import { Web3Wrapper } from "@0xproject/web3-wrapper";
+import { Web3Wrapper } from "@0x/web3-wrapper";
 import { utils } from "ethers";
 
 export interface Market {
@@ -118,8 +118,7 @@ export default class Veil {
       }
     });
     const json = await response.json();
-    if (json.errors) console.error(url);
-    if (json.errors) throw new VeilError(json.errors);
+    if (json.errors) throw new VeilError(json.errors, url);
     return camelizeKeys(json.data);
   }
 
@@ -155,7 +154,7 @@ export default class Veil {
     signature: string;
     message: string;
   }) {
-    const url = `${this.apiHost}/api/v1/session_challenges`;
+    const url = `${this.apiHost}/api/v1/sessions`;
     const session: { token: string } = await this.fetch(url, params, "POST");
     return session;
   }

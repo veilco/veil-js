@@ -1,8 +1,8 @@
 {
   "name": "veil-js",
   "version": "0.0.1",
-  "description": "Veil tradebot library",
-  "main": "dist/Veil.js",
+  "description": "Veil API Wrapper",
+  "main": "dist/index.js",
   "author": "Veil, Inc.",
   "license": "MIT",
   "scripts": {
@@ -11,18 +11,20 @@
     "postinstall": "rm -f node_modules/web3/index.d.ts"
   },
   "dependencies": {
-    "@0xproject/order-utils": "^1.0.6",
-    "@0xproject/subproviders": "^2.0.2",
-    "@0xproject/web3-wrapper": "^3.0.2",
+    "@0x/order-utils": "^3.0.4",
+    "@0x/subproviders": "^2.1.6",
+    "@0x/utils": "^2.0.6",
+    "@0x/web3-wrapper": "^3.1.6",
+    "ethers": "^4.0.1",
+    "humps": "^2.0.1",
+    "lodash": "^4.17.11",
+    "node-fetch": "^2.2.0"
+  },
+  "devDependencies": {
     "@types/lodash": "^4.14.117",
     "@types/node": "^10.9.4",
     "@types/node-fetch": "^2.1.2",
     "@types/web3": "^1.0.3",
-    "babel-polyfill": "^6.26.0",
-    "ethers": "^4.0.1",
-    "humps": "^2.0.1",
-    "lodash": "^4.17.11",
-    "node-fetch": "^2.2.0",
     "ts-node": "^7.0.1",
     "typescript": "^3.0.3"
   }
