@@ -8,6 +8,7 @@ import authenticate from "./auth";
 import graphqlFetch from "./graphqlFetch";
 import { signOrder } from "./0x";
 import fetch from "node-fetch";
+import { VeilError } from "./errors";
 
 interface IMarket {
   slug: string;
@@ -77,12 +78,17 @@ export function fromShares(
     .div(TEN_18);
 }
 
+export function encodeParams(params: Object) {
+  return Object.entries(params)
+    .map(kv => kv.map(encodeURIComponent).join("="))
+    .join("&");
+}
+
 export default class Veil {
   provider: Provider;
   apiHost: string;
   address: string;
   jwt: string;
-  takerAddress: string;
   marketSlug: string;
   market: IMarket;
   isSetup = false;
@@ -98,9 +104,29 @@ export default class Veil {
     this.apiHost = apiHost;
   }
 
+  async fetch(
+    url: string,
+    params: any = {},
+    method: "POST" | "GET" | "DELETE" = "GET"
+  ) {
+    if (method === "GET") url = url + "?" + encodeParams(params);
+    const response = await fetch(url, {
+      method,
+      body: method !== "GET" ? JSON.stringify(params) : undefined,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(this.jwt ? { Authorization: `Bearer ${this.jwt}` } : {})
+      }
+    });
+    const json = await response.json();
+    if (json.errors) console.error(url);
+    if (json.errors) throw new VeilError(json.errors);
+    return camelizeKeys(json.data);
+  }
+
   async setup() {
     if (!this.jwt) await this.authenticate();
-    if (!this.takerAddress) await this.getTakerAddress();
     this.isSetup = true;
   }
 
@@ -112,14 +138,11 @@ export default class Veil {
   async getMarkets(
     filter: { index?: string; status?: "open" | "resolved" } = {}
   ) {
-    let url = `${this.apiHost}/api/v1/markets?`;
-    if (filter.index) url = `${url}index=${filter.index}&`;
-    if (filter.status) url = `${url}status=${filter.status}&`;
-    const response = await fetch(url);
-    const json = await response.json();
-    if (json.errors)
-      throw new Error("Error getting markets: " + JSON.stringify(json.errors));
-    return json.data.map((market: object) => camelizeKeys(market));
+    let url = `${this.apiHost}/api/v1/markets`;
+    const params: { index?: string; status?: "open" | "resolved" } = {};
+    if (filter.index) params.index = filter.index;
+    if (filter.status) params.status = filter.status;
+    return await this.fetch(url, params);
   }
 
   async createOrder(quote: IQuote, options: { postOnly?: boolean } = {}) {
@@ -127,29 +150,17 @@ export default class Veil {
 
     const signedOrder = await signOrder(this.provider, quote.zeroExOrder);
     const params = {
-      zeroExOrder: signedOrder,
-      quoteUid: quote.uid,
-      ...options
+      order: {
+        zeroExOrder: signedOrder,
+        quoteUid: quote.uid,
+        ...options
+      }
     };
     while (true) {
       try {
-        const { createOrder } = await graphqlFetch<{
-          createOrder: IOrder;
-        }>(
-          this.apiHost,
-          `
-          mutation CreateOrder($params: CreateOrderInput!) {
-            createOrder(params: $params) {
-              uid
-              status
-              tokenAmount
-              tokenAmountFilled
-            }
-          }`,
-          { params },
-          this.jwt
-        );
-        return createOrder;
+        const url = `${this.apiHost}/api/v1/orders`;
+        const order: IOrder = await this.fetch(url, params, "POST");
+        return order;
       } catch (e) {
         if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
           await this.authenticate();
@@ -179,30 +190,20 @@ export default class Veil {
     const token = tokenType === "long" ? _market.longToken : _market.shortToken;
 
     const params = {
-      side,
-      token,
-      tokenAmount: amount.toString(),
-      price: price.toString(),
-      type: "limit"
+      quote: {
+        side,
+        token,
+        tokenAmount: amount.toString(),
+        price: price.toString(),
+        type: "limit"
+      }
     };
 
     while (true) {
       try {
-        const { createQuote } = await graphqlFetch<{
-          createQuote: IQuote;
-        }>(
-          this.apiHost,
-          `
-          mutation CreateQuote($params: CreateQuoteInput!) {
-            createQuote(params: $params) {
-              uid
-              zeroExOrder
-            }
-          }`,
-          { params },
-          this.jwt
-        );
-        return createQuote;
+        const url = `${this.apiHost}/api/v1/quotes`;
+        const quote: IQuote = await this.fetch(url, params, "POST");
+        return quote;
       } catch (e) {
         if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
           await this.authenticate();
@@ -216,21 +217,9 @@ export default class Veil {
 
     while (true) {
       try {
-        const { cancelOrder } = await graphqlFetch<{ cancelOrder: IOrder }>(
-          this.apiHost,
-          `
-          mutation CancelOrder($uid: String!) {
-            cancelOrder(uid: $uid) {
-              uid
-              status
-              tokenAmount
-              tokenAmountFilled
-            }
-          }`,
-          { uid },
-          this.jwt
-        );
-        return cancelOrder;
+        const url = `${this.apiHost}/api/v1/orders/${uid}`;
+        const order: IOrder = await this.fetch(url, {}, "DELETE");
+        return order;
       } catch (e) {
         if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
           await this.authenticate();
@@ -239,28 +228,14 @@ export default class Veil {
     }
   }
 
-  async getUserOrders(_market: IMarket) {
+  async getUserOrders(market: IMarket) {
     if (!this.isSetup) await this.setup();
 
     while (true) {
       try {
-        const { userOrders } = await graphqlFetch<{ userOrders: IOrder[] }>(
-          this.apiHost,
-          `
-            query GetUserOrders($slug: String!) {
-              userOrders(marketSlug: $slug) {
-                uid
-                longPrice
-                longSide
-                tokenAmount
-                tokenAmountFilled
-                status
-              }
-            }`,
-          { slug: _market.slug },
-          this.jwt
-        );
-        return userOrders;
+        const url = `${this.apiHost}/api/v1/orders`;
+        const orders: IOrder[] = await this.fetch(url, { market: market.slug });
+        return orders;
       } catch (e) {
         if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
           await this.authenticate();
@@ -269,23 +244,10 @@ export default class Veil {
     }
   }
 
-  async getOrderBook(_market: IMarket) {
-    const { market } = await graphqlFetch<{ market: IMarket }>(
-      this.apiHost,
-      `
-      query GetMarket($slug: String!) {
-        market(slug: $slug) {
-          orders {
-            longPrice
-            longSide
-            tokenAmount
-            tokenAmountFilled
-          }
-        }
-      }`,
-      { slug: _market.slug }
-    );
-    return market.orders;
+  async getOrderBook(market: IMarket) {
+    const url = `${this.apiHost}/api/v1/markets/${market.slug}/orders`;
+    const orders: IOrder[] = await this.fetch(url);
+    return orders;
   }
 
   async getDataFeed(_dataFeedSlug: string, _scope: "day" | "month" = "month") {
@@ -318,39 +280,10 @@ export default class Veil {
     ];
   }
 
-  async getMarket(_slug: string) {
-    const { market } = await graphqlFetch<{ market: IMarket }>(
-      this.apiHost,
-      `
-      query GetMarket($slug: String!) {
-        market(slug: $slug) {
-          slug
-          uid
-          endsAt
-          minPrice
-          maxPrice
-          shortToken
-          longToken
-          numTicks
-          index
-          limitPrice
-        }
-      }`,
-      { slug: _slug }
-    );
-    if (!market) throw new Error(`Market not found: ${_slug}`);
+  async getMarket(slug: string) {
+    const url = `${this.apiHost}/api/v1/markets/${slug}`;
+    const market: IMarket = await this.fetch(url);
+    if (!market) throw new Error(`Market not found: ${slug}`);
     return market;
-  }
-
-  protected async getTakerAddress() {
-    const { takerAddress } = await graphqlFetch<{ takerAddress: string }>(
-      this.apiHost,
-      `
-      query GetTakerAddress {
-        takerAddress
-      }`
-    );
-    this.takerAddress = takerAddress;
-    return true;
   }
 }
