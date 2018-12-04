@@ -28,7 +28,7 @@ All methods return promises, and can be used with `async/await`.
 
 Fetches all markets, optionally filtered by `channel` (`btc`, `rep`, `meme`) or status (`open` or `resolved`). A maximum of 10 markets are returned per page, and you can specify pages using the `page` option.
 
-See `getMarket` for an example of a single
+See `getMarket` for an example market response.
 
 ### `veil.getMarket(slug: string)`
 
