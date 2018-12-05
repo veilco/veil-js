@@ -31,6 +31,22 @@ export interface Order {
   tokenAmount: string;
   tokenAmountUnfilled: string;
   status: "open" | "filled" | "canceled";
+  tokenType: "short" | "long";
+}
+
+export interface OrderFill {
+  uid: string;
+  longPrice: string;
+  shortPrice: string;
+  longSide: "buy" | "sell";
+  tokenAmount: string;
+  currencyAmount: string;
+  status: "pending" | "completed";
+  completedAt: number;
+  createdAt: number;
+  side: "buy" | "sell";
+  tokenType: "short" | "long";
+  immediate: boolean;
 }
 
 export interface Quote {
@@ -49,6 +65,13 @@ export interface DataFeed {
   description: string;
   denomination: string;
   entries: DataFeedEntry[];
+}
+
+export interface Page<T> {
+  results: T[];
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
 const API_HOST_DEFAULT = "https://api.kovan.veil.market";
@@ -171,7 +194,8 @@ export default class Veil {
     } = {}
   ) {
     const url = `${this.apiHost}/api/v1/markets`;
-    return await this.fetch(url, params);
+    const page: Page<Market> = await this.fetch(url, params);
+    return page;
   }
 
   async createOrder(quote: Quote, options: { postOnly?: boolean } = {}) {
@@ -257,14 +281,17 @@ export default class Veil {
     }
   }
 
-  async getUserOrders(market: Market) {
+  async getUserOrders(market: Market, options?: { page?: number }) {
     if (!this.isSetup) await this.setup();
 
     while (true) {
       try {
         const url = `${this.apiHost}/api/v1/orders`;
-        const orders: Order[] = await this.fetch(url, { market: market.slug });
-        return orders;
+        const page: Page<Order> = await this.fetch(url, {
+          ...options,
+          market: market.slug
+        });
+        return page;
       } catch (e) {
         if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
           await this.authenticate();
@@ -273,10 +300,16 @@ export default class Veil {
     }
   }
 
-  async getOrders(market: Market) {
+  async getOrders(market: Market, options?: { page?: number }) {
     const url = `${this.apiHost}/api/v1/markets/${market.slug}/orders`;
-    const orders: Order[] = await this.fetch(url);
-    return orders;
+    const page: Page<Order> = await this.fetch(url, options);
+    return page;
+  }
+
+  async getOrderFills(market: Market, options?: { page?: number }) {
+    const url = `${this.apiHost}/api/v1/markets/${market.slug}/order_fills`;
+    const page: Page<OrderFill> = await this.fetch(url, options);
+    return page;
   }
 
   async getDataFeed(dataFeedSlug: string, scope: "day" | "month" = "month") {
