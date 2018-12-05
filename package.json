@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
+    "prepublishOnly": "npm run build",
     "postinstall": "rm -f node_modules/web3/index.d.ts"
   },
   "dependencies": {
