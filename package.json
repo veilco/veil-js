@@ -1,6 +1,6 @@
 {
   "name": "veil-js",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Veil API Wrapper",
   "main": "dist/index.js",
   "author": "Veil, Inc.",
@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
+    "prepublishOnly": "npm run build",
     "postinstall": "rm -f node_modules/web3/index.d.ts"
   },
   "dependencies": {
