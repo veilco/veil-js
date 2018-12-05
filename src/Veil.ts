@@ -12,7 +12,7 @@ import { utils } from "ethers";
 export interface Market {
   slug: string;
   uid: string;
-  endsAt: string;
+  endsAt: number;
   shortToken: string;
   longToken: string;
   numTicks: string;
@@ -56,7 +56,7 @@ export interface Quote {
 
 export interface DataFeedEntry {
   value: string;
-  timestamp: string;
+  timestamp: number;
 }
 
 export interface DataFeed {
