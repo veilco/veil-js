@@ -35,6 +35,25 @@ All API methods that return lists (`getMarkets`, `getOrders`, `getOrderFills`, a
 
 All of these methods also take a optional `page` argument, which you can use to fetch additional pages.
 
+## Shares primer
+
+Veil markets each have two tokens: LONG and SHORT. By holding shares of LONG or SHORT tokens, you hold a "position" in a market. When a market ends, its LONG and SHORT shares are redeemable for ETH, with the rates depending on the market's result. 
+
+In yes/no markets (such as, "Will ETH be above $100 at the end of 2018?"), the payout goes entirely to one share token, LONG if the market resolves to "Yes", and SHORT if the market resolves to "No".
+
+In scalar markets (such as, "What will be the price of ETH at the end of 2018?"), the payout is split between LONG and SHORT tokens according to where the result falls within the market's "bounds" (set by `minPrice` and `maxPrice`).
+
+> Note: Together, 1 LONG share and 1 SHORT share are always redeemable for exactly 1 ETH.
+
+The price of a Veil share token is therefore always somewhere between 0 and 1 ETH/share, depending on what the market predicts that each token's payout will be.
+
+Share token prices are expressed as integers between 0 and 10000, where 10000 means 1 ETH/share. A token with a price of 6000 can be purchased for 0.6 ETH/share.
+
+## Units and types
+
+- Dates are returned as an integer number of milliseconds since the Unix epoch.
+- Numbers are returned as strings for precision. We recommend using a library such as [bignumber.js](https://github.com/MikeMcl/bignumber.js/) to perform math on them.
+
 ## Methods
 
 All methods return promises, and can be used with `async/await`.
@@ -88,31 +107,23 @@ Fetches details about a single market. Example response:
 }
 ```
 
-### `veil.getOrders(market: Market, options?: { page: number })`
+### `veil.getBids(market: Market, tokenType: "long" | "short")` and `veil.getAsks(market: Market, tokenType: "long" | "short")`
 
-Fetches the open orders in a market. Example response:
+The `getBids` and `getAsks` methods let you fetch the orderbook for a market. You can fetch orders for either LONG or SHORT tokens by passing `tokenType` as a second argument (in Veil markets, the LONG and SHORT orderbooks are always mirror images of each other).
+
+Bids are sorted by price descending, and asks are sorted by price ascending, so you can get the spread of a market by comparing the first bid and first ask.
+
+Example response:
 ```js
 {
   results: [  
     {  
-      uid: "3e4fd40d-176f-432f-8f0b-d0a600d55a1f",
-      status: "open",
-      createdAt: 1543509213537,
-      expiresAt: 100000000000000,
-      type: "limit",
-      tokenType: "short",
-      side: "buy",
-      longSide: "sell",
-      longPrice: "7707",
-      shortPrice: "2293",
-      token: "0x598b46d68e3e03f810a45d7d8dc9af5afdbafd56",
-      tokenAmount: "100000000000000",
-      "tokenAmountFilled":"0",
-      currency: "0xe7a67a41b4d41b60e0efb60363df163e3cb6278f",
-      currencyAmount: "229300000000000000",
-      currencyAmountFilled: "0",
-      postOnly: false,
-      market: null
+      price: "7000",
+      tokenAmount: "100000000000000"
+    },
+    {
+      price: "7100",
+      tokenAmount: "50000000000000"
     },
     ...
   ],
@@ -122,31 +133,19 @@ Fetches the open orders in a market. Example response:
 }
 ```
 
-> **Note:** Each order has two "prices" -- `longPrice` and `shortPrice`. This is because the same order exists in the order book for short tokens and for long tokens. If you are trading long tokens, then the `longPrice` is the price to consider, and vice versa. The prices are a number from 0 to `market.numTicks`, which is usually 10000 for Veil markets.
-> 
-> A `longPrice` of 6000 on an order where `longSide` is `buy` means that the creator of this order is willing to buy long shares for 0.6 ETH/share *OR* sell short shares for 0.4 ETH/share.
-> 
-> For more information about this, ask a question on our [Discord](https://discord.gg/RcWDAr9)
+### `veil.getOrderFills(market: Market, tokenType: "long" | "short", options?: { page: number })`
 
-### `veil.getOrderFills(market: Market, options?: { page: number })`
-
-Fetches the order fill history in a market. Example response:
+Fetches the order fill history in a market for tokens of type `tokenType` (LONG or SHORT). Example response:
 ```js
 {
   results: [
     {
-      currencyAmount: "432000000000000000",
-      tokenType: "long",
-      immediate: true,
       createdAt: 1544094244674,
       status: "completed",
-      longSide: "buy",
-      uid: "dac7a4b5-bed5-4a07-85db-f5ff97a7f3d1",
-      side: "buy",
       tokenAmount: "100000000000000",
-      completedAt: 1544094246449,
-      shortPrice: "5680",
-      longPrice: "4320"
+      price: "4320",
+      side: "buy",
+      uid: "dac7a4b5-bed5-4a07-85db-f5ff97a7f3d1",
     },
     ...
   ],
@@ -160,7 +159,7 @@ Fetches the order fill history in a market. Example response:
 
 Creates a Veil quote, which is used to calculate fees and generate an unsigned 0x order, which is required to create a Veil order.
 
-> **Note**: As above, `price` here is a number between 0 and `market.numTicks`. A price of 6000 is equivalent to 0.6 ETH/share.
+> **Note**: `price` is a number between 0 and `market.numTicks`, which is always 10000. A price of 6000 is equivalent to 0.6 ETH/share.
 
 Example response:
 ```js
