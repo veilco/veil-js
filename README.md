@@ -2,6 +2,19 @@
 
 `veil-js` is a TypeScript/Javascript library for interacting with the Veil markets and trading API.
 
+Install:
+```bash
+yarn add veil-js
+```
+
+## Questions?
+
+Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.market`. If you encounter a problem using `veil-js`, feel free to [open an issue](https://github.com/veilmarket/veil-js/issues).
+
+`veil-js` is maintained by @gkaemmer, @mertcelebi, and @pfletcherhill.
+
+## Usage
+
 You can use the API with or without authenticating using your ethereum address.
 
 ```typescript
@@ -37,15 +50,17 @@ All of these methods also take a optional `page` argument, which you can use to 
 
 ## Shares primer
 
-Veil markets each have two tokens: LONG and SHORT. By holding shares of LONG or SHORT tokens, you hold a "position" in a market. When a market ends, its LONG and SHORT shares are redeemable for ETH, with the rates depending on the market's result. 
+Veil markets are built on [Augur](https://docs.augur.net/) and inherit the basic mechanics of Augur shares and prices.
 
-In yes/no markets (such as, "Will ETH be above $100 at the end of 2018?"), the payout goes entirely to one share token, LONG if the market resolves to "Yes", and SHORT if the market resolves to "No".
+A Veil market has two tokens: LONG and SHORT. By holding shares of LONG or SHORT tokens, you hold a "position" in the market. When the market ends, its LONG and SHORT shares are redeemable for ETH, with the rates depending on the market's result.
 
-In scalar markets (such as, "What will be the price of ETH at the end of 2018?"), the payout is split between LONG and SHORT tokens according to where the result falls within the market's "bounds" (set by `minPrice` and `maxPrice`).
+In yes/no markets (e.g. "Will ETH be above $100 at the end of 2018?"), the payout goes entirely to one share token—LONG if the market resolves to "Yes" and SHORT if the market resolves to "No".
+
+In scalar markets (e.g. "What will be the price of ETH at the end of 2018?"), the payout is split between LONG and SHORT tokens according to where the result (e.g. the price of ETH) falls within the market's "bounds" (set by `minPrice` and `maxPrice`).
 
 > Note: Together, 1 LONG share and 1 SHORT share are always redeemable for exactly 1 ETH.
 
-The price of a Veil share token is therefore always somewhere between 0 and 1 ETH/share, depending on what the market predicts that each token's payout will be.
+The price of a Veil share token is therefore always somewhere between 0 and 1 ETH per share, depending on what the market predicts that each token's payout will be.
 
 Share token prices are expressed as integers between 0 and 10000, where 10000 means 1 ETH/share. A token with a price of 6000 can be purchased for 0.6 ETH/share.
 
@@ -109,7 +124,7 @@ Fetches details about a single market. Example response:
 
 ### `veil.getBids(market: Market, tokenType: "long" | "short")` and `veil.getAsks(market: Market, tokenType: "long" | "short")`
 
-The `getBids` and `getAsks` methods let you fetch the orderbook for a market. You can fetch orders for either LONG or SHORT tokens by passing `tokenType` as a second argument (in Veil markets, the LONG and SHORT orderbooks are always mirror images of each other).
+The `getBids` and `getAsks` methods let you fetch the order book for a market. You can fetch orders for either LONG or SHORT tokens by passing `tokenType` as a second argument (in Veil markets, the LONG and SHORT order books are always mirror images of each other).
 
 Bids are sorted by price descending, and asks are sorted by price ascending, so you can get the spread of a market by comparing the first bid and first ask.
 
@@ -159,7 +174,7 @@ Fetches the order fill history in a market for tokens of type `tokenType` (LONG 
 
 Creates a Veil quote, which is used to calculate fees and generate an unsigned 0x order, which is required to create a Veil order.
 
-> **Note**: `price` is a number between 0 and `market.numTicks`, which is always 10000. A price of 6000 is equivalent to 0.6 ETH/share.
+> **Note**: `price` is a number between 0 and `market.numTicks`, which is always 10000 for Veil markets. A price of 6000 is equivalent to 0.6 ETH/share.
 
 Example response:
 ```js
