@@ -26,8 +26,8 @@ export interface Market {
 
 export interface Order {
   uid: string;
-  longPrice: string;
-  longSide: "buy" | "sell";
+  price: string;
+  side: "buy" | "sell";
   tokenAmount: string;
   tokenAmountUnfilled: string;
   status: "open" | "filled" | "canceled";
@@ -36,17 +36,16 @@ export interface Order {
 
 export interface OrderFill {
   uid: string;
-  longPrice: string;
-  shortPrice: string;
-  longSide: "buy" | "sell";
-  tokenAmount: string;
-  currencyAmount: string;
-  status: "pending" | "completed";
-  completedAt: number;
-  createdAt: number;
+  price: string;
   side: "buy" | "sell";
-  tokenType: "short" | "long";
-  immediate: boolean;
+  tokenAmount: string;
+  status: "pending" | "completed";
+  createdAt: number;
+}
+
+export interface OrderBookRow {
+  price: string;
+  tokenAmount: string;
 }
 
 export interface Quote {
@@ -111,8 +110,6 @@ export default class Veil {
   apiHost: string;
   address: string;
   jwt: string;
-  marketSlug: string;
-  market: Market;
   isSetup = false;
 
   constructor(
@@ -300,14 +297,50 @@ export default class Veil {
     }
   }
 
-  async getOrders(market: Market, options?: { page?: number }) {
-    const url = `${this.apiHost}/api/v1/markets/${market.slug}/orders`;
-    const page: Page<Order> = await this.fetch(url, options);
+  async getBids(
+    market: Market,
+    tokenType: "long" | "short",
+    options?: { page?: number }
+  ) {
+    if (tokenType !== "long" && tokenType !== "short")
+      throw new Error(
+        `Invalid tokenType: "${tokenType}". Must be either "long" or "short".`
+      );
+    const url = `${this.apiHost}/api/v1/markets/${
+      market.slug
+    }/${tokenType}/bids`;
+    const page: Page<OrderBookRow> = await this.fetch(url, options);
     return page;
   }
 
-  async getOrderFills(market: Market, options?: { page?: number }) {
-    const url = `${this.apiHost}/api/v1/markets/${market.slug}/order_fills`;
+  async getAsks(
+    market: Market,
+    tokenType: "long" | "short",
+    options?: { page?: number }
+  ) {
+    if (tokenType !== "long" && tokenType !== "short")
+      throw new Error(
+        `Invalid tokenType: "${tokenType}". Must be either "long" or "short".`
+      );
+    const url = `${this.apiHost}/api/v1/markets/${
+      market.slug
+    }/${tokenType}/asks`;
+    const page: Page<OrderBookRow> = await this.fetch(url, options);
+    return page;
+  }
+
+  async getOrderFills(
+    market: Market,
+    tokenType: "long" | "short",
+    options?: { page?: number }
+  ) {
+    if (tokenType !== "long" && tokenType !== "short")
+      throw new Error(
+        `Invalid tokenType: "${tokenType}". Must be either "long" or "short".`
+      );
+    const url = `${this.apiHost}/api/v1/markets/${
+      market.slug
+    }/${tokenType}/order_fills`;
     const page: Page<OrderFill> = await this.fetch(url, options);
     return page;
   }
