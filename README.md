@@ -9,9 +9,9 @@ yarn add veil-js
 
 ## Questions?
 
-Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.market`. If you encounter a problem using `veil-js`, feel free to [open an issue](https://github.com/veilmarket/veil-js/issues).
+Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.market`. If you encounter a problem using `veil-js`, feel free to [open an issue](https://github.com/veilco/veil-js/issues).
 
-`veil-js` is maintained by @gkaemmer, @mertcelebi, and @pfletcherhill.
+`veil-js` is maintained by [@gkaemmer](https://github.com/gkaemmer), [@mertcelebi](https://github.com/mertcelebi), and [@pfletcherhill](https://github.com/pfletcherhill).
 
 ## Usage
 
