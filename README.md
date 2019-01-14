@@ -35,7 +35,7 @@ const myOrders = await veil.getUserOrders(markets[0]);
 
 ## Pages
 
-All API methods that return lists (`getMarkets`, `getOrders`, `getOrderFills`, and `getUserOrders`) return `Page` objects that have the following form:
+All API methods that return lists (`getMarkets`, `getBids`, `getAsks`, `getOrderFills`, and `getUserOrders`) return `Page` objects that have the following form:
 
 ```js
 {
