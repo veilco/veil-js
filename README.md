@@ -15,7 +15,13 @@ Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.mark
 
 ## Usage
 
-You can use the API with or without authenticating using your ethereum address.
+You can use the API with or without authenticating using your ethereum address. The constructor has the following signature:
+```typescript
+new Veil(mnemonic?: string, address?: string, apiUrl?: string = 'https://api.kovan.veil.co')
+```
+Note that the default API is our testnet server. If you want to use mainnet, you must explicitly pass `"https://api.veil.co"` as the third constructor parameter.
+
+Full example:
 
 ```typescript
 import Veil from "veil-js";
