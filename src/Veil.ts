@@ -231,12 +231,14 @@ export default class Veil {
     const zero = new BigNumber(0);
     const numTicks = new BigNumber(market.numTicks);
     if (typeof amount === "number") amount = toShares(amount, market.numTicks);
+    amount = amount.round();
+
     if (typeof price === "number")
       price = new BigNumber(price.toString()).mul(numTicks);
-
     if (price.lt(zero)) price = zero;
     if (price.gt(numTicks)) price = numTicks;
     price = price.round();
+
     const token = tokenType === "long" ? market.longToken : market.shortToken;
 
     const params = {
