@@ -68,8 +68,6 @@ In scalar markets (e.g. "What will be the price of ETH at the end of 2018?"), th
 
 The price of a Veil share token is therefore always somewhere between 0 and 1 ETH per share, depending on what the market predicts that each token's payout will be.
 
-Share token prices are expressed as integers between 0 and 10000, where 10000 means 1 ETH/share. A token with a price of 6000 can be purchased for 0.6 ETH/share.
-
 ## Units and types
 
 - Dates are returned as an integer number of milliseconds since the Unix epoch.
