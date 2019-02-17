@@ -32,6 +32,7 @@ export interface Order {
   tokenAmountUnfilled: string;
   status: "open" | "filled" | "canceled";
   tokenType: "short" | "long";
+  fills: OrderFill[];
 }
 
 export interface OrderFill {
@@ -73,11 +74,20 @@ export interface Page<T> {
   total: number;
 }
 
+export interface MarketBalances {
+  longBalance: string;
+  shortBalance: string;
+  longBalanceClean: string;
+  shortBalanceClean: string;
+  veilEtherBalance: string;
+  etherBalance: string;
+}
+
 const API_HOST_DEFAULT = "https://api.kovan.veil.market";
 
-const TEN_18 = new BigNumber(10).toPower(18);
+const TEN_18 = new BigNumber(10).pow(18);
 export function toWei(amount: number) {
-  return new BigNumber(amount.toString()).mul(TEN_18);
+  return new BigNumber(amount.toString()).times(TEN_18);
 }
 
 export function fromWei(amount: BigNumber | string) {
@@ -86,7 +96,7 @@ export function fromWei(amount: BigNumber | string) {
 
 export function toShares(amount: number, numTicks: string | number) {
   return new BigNumber(amount.toString())
-    .mul(TEN_18)
+    .times(TEN_18)
     .div(new BigNumber(numTicks));
 }
 
@@ -95,7 +105,7 @@ export function fromShares(
   numTicks: string | number
 ) {
   return new BigNumber(amount.toString())
-    .mul(new BigNumber(numTicks))
+    .times(new BigNumber(numTicks))
     .div(TEN_18);
 }
 
@@ -231,13 +241,13 @@ export default class Veil {
     const zero = new BigNumber(0);
     const numTicks = new BigNumber(market.numTicks);
     if (typeof amount === "number") amount = toShares(amount, market.numTicks);
-    amount = amount.round();
+    amount = amount.decimalPlaces(0);
 
     if (typeof price === "number")
-      price = new BigNumber(price.toString()).mul(numTicks);
+      price = new BigNumber(price.toString()).times(numTicks);
     if (price.lt(zero)) price = zero;
     if (price.gt(numTicks)) price = numTicks;
-    price = price.round();
+    price = price.decimalPlaces(0);
 
     const token = tokenType === "long" ? market.longToken : market.shortToken;
 
@@ -280,7 +290,13 @@ export default class Veil {
     }
   }
 
-  async getUserOrders(market: Market, options?: { page?: number }) {
+  async getUserOrders(
+    market: Market,
+    options?: {
+      page?: number;
+      status?: "open" | "filled" | "canceled" | "expired";
+    }
+  ) {
     if (!this.isSetup) await this.setup();
 
     while (true) {
@@ -368,5 +384,11 @@ export default class Veil {
     const market: Market = await this.fetch(url);
     if (!market) throw new Error(`Market not found: ${slug}`);
     return market;
+  }
+
+  async getMarketBalances(slug: string) {
+    const url = `${this.apiHost}/api/v1/markets/${slug}/balances`;
+    const balances: MarketBalances = await this.fetch(url);
+    return balances;
   }
 }

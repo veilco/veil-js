@@ -3,6 +3,7 @@
 `veil-js` is a TypeScript/Javascript library for interacting with the Veil markets and trading API.
 
 Install:
+
 ```bash
 yarn add veil-js
 ```
@@ -16,9 +17,11 @@ Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.mark
 ## Usage
 
 You can use the API with or without authenticating using your ethereum address. The constructor has the following signature:
+
 ```typescript
 new Veil(mnemonic?: string, address?: string, apiUrl?: string = 'https://api.kovan.veil.co')
 ```
+
 Note that the default API is our testnet server. If you want to use mainnet, you must explicitly pass `"https://api.veil.co"` as the third constructor parameter.
 
 Full example:
@@ -33,7 +36,8 @@ console.log(markets); // { results: [{ slug: "...", ... }], total: 35, ... }
 
 // With authentication
 // Note: you must have registered on Veil using this address
-const mnemonic = "unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil";
+const mnemonic =
+  "unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil";
 const address = "0x5b5eae94bf37ff266955e46fdd38932346cc67e8";
 const veil = new Veil(mnemonic, address);
 const myOrders = await veil.getUserOrders(markets[0]);
@@ -60,7 +64,7 @@ Veil markets are built on [Augur](https://docs.augur.net/) and inherit the basic
 
 A Veil market has two tokens: LONG and SHORT. By holding shares of LONG or SHORT tokens, you hold a "position" in the market. When the market ends, its LONG and SHORT shares are redeemable for ETH, with the rates depending on the market's result.
 
-In yes/no markets (e.g. "Will ETH be above $100 at the end of 2018?"), the payout goes entirely to one share token—LONG if the market resolves to "Yes" and SHORT if the market resolves to "No".
+In yes/no markets (e.g. "Will ETH be above \$100 at the end of 2018?"), the payout goes entirely to one share token—LONG if the market resolves to "Yes" and SHORT if the market resolves to "No".
 
 In scalar markets (e.g. "What will be the price of ETH at the end of 2018?"), the payout is split between LONG and SHORT tokens according to where the result (e.g. the price of ETH) falls within the market's "bounds" (set by `minPrice` and `maxPrice`).
 
@@ -82,6 +86,7 @@ All methods return promises, and can be used with `async/await`.
 Fetches all markets, optionally filtered by `channel` (`btc`, `rep`, `meme`) or status (`open` or `resolved`). A maximum of 10 markets are returned per page, and you can specify pages using the `page` option.
 
 Example response:
+
 ```js
 {
   results: [
@@ -98,6 +103,7 @@ See `getMarket` for an example market object.
 ### `veil.getMarket(slug: string)`
 
 Fetches details about a single market. Example response:
+
 ```js
 {
   name:
@@ -133,10 +139,11 @@ The `getBids` and `getAsks` methods let you fetch the order book for a market. Y
 Bids are sorted by price descending, and asks are sorted by price ascending, so you can get the spread of a market by comparing the first bid and first ask.
 
 Example response:
+
 ```js
 {
-  results: [  
-    {  
+  results: [
+    {
       price: "7000",
       tokenAmount: "100000000000000"
     },
@@ -155,6 +162,7 @@ Example response:
 ### `veil.getOrderFills(market: Market, tokenType: "long" | "short", options?: { page: number })`
 
 Fetches the order fill history in a market for tokens of type `tokenType` (LONG or SHORT). Example response:
+
 ```js
 {
   results: [
@@ -181,6 +189,7 @@ Creates a Veil quote, which is used to calculate fees and generate an unsigned 0
 > **Note**: `price` is a number between 0 and `market.numTicks`, which is always 10000 for Veil markets. A price of 6000 is equivalent to 0.6 ETH/share.
 
 Example response:
+
 ```js
 {
   uid: "5d93b874-bde1-4af1-b7af-ae726943f549",
@@ -220,6 +229,7 @@ Example response:
 Creates an order using an generated quote. This method signs the 0x order using your mnemonic and address provided to the constructor.
 
 Example response:
+
 ```js
 {
   uid: "77fb963c-6b78-48ce-b030-7a08246e1f9f",
@@ -245,15 +255,16 @@ Example response:
 
 Cancels an order. Returns the order that was canceled.
 
-### `veil.getUserOrders(market: Market, options?: { page: number })`
+### `veil.getUserOrders(market: Market, options?: { page?: number, status?: "open" | "filled" | "canceled" | "expired" })`
 
 Fetches all orders that you've created in a particular market, including orders that have been filled.
 
 Example response:
+
 ```js
 {
-  results: [  
-    {  
+  results: [
+    {
       uid: "3e4fd40d-176f-432f-8f0b-d0a600d55a1f",
       status: "filled",
       createdAt: 1543509213537,
@@ -270,11 +281,27 @@ Example response:
       currencyAmountFilled: "0",
       postOnly: false,
       market: null
+      fills: [...] // Order fills associated with the order
     },
     ...
   ],
   total: 45,
   page: 0,
   pageSize: 10000
+}
+```
+
+### `veil.getMarketBalances(slug: string)`
+
+Requires authentication. Returns the market balances for the authenticated user. Example response:
+
+```js
+{
+  "longBalance": "10000000000000",
+  "longBalanceClean": "100000000000000000", // long_balance * market.num_ticks
+  "shortBalance": "40000000000000",
+  "shortBalanceClean": "400000000000000000", // short_balance * market.num_ticks
+  "veilEtherBalance": "200000000000000000",
+  "etherBalance": "200000000000000000"
 }
 ```
