@@ -255,7 +255,7 @@ Example response:
 
 Cancels an order. Returns the order that was canceled.
 
-### `veil.getUserOrders(market: Market, options?: { page?: number, status?: "pending" | "open" | "filled" | "canceled" | "expired" })`
+### `veil.getUserOrders(market: Market, options?: { page?: number, status?: "open" | "filled" | "canceled" | "expired" })`
 
 Fetches all orders that you've created in a particular market, including orders that have been filled.
 

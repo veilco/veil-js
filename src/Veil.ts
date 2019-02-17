@@ -294,7 +294,7 @@ export default class Veil {
     market: Market,
     options?: {
       page?: number;
-      status?: "pending" | "open" | "filled" | "canceled" | "expired";
+      status?: "open" | "filled" | "canceled" | "expired";
     }
   ) {
     if (!this.isSetup) await this.setup();
