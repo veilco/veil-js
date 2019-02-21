@@ -387,8 +387,17 @@ export default class Veil {
   }
 
   async getMarketBalances(slug: string) {
-    const url = `${this.apiHost}/api/v1/markets/${slug}/balances`;
-    const balances: MarketBalances = await this.fetch(url);
-    return balances;
+    if (!this.isSetup) await this.setup();
+    while (true) {
+      try {
+        const url = `${this.apiHost}/api/v1/markets/${slug}/balances`;
+        const balances: MarketBalances = await this.fetch(url);
+        return balances;
+      } catch (e) {
+        if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
+          await this.authenticate();
+        } else throw e;
+      }
+    }
   }
 }
