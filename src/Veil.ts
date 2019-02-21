@@ -152,6 +152,19 @@ export default class Veil {
     return camelizeKeys(json.data);
   }
 
+  async retry<T>(func: () => Promise<T>) {
+    while (true) {
+      try {
+        const result = await func();
+        return result;
+      } catch (e) {
+        if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
+          await this.authenticate();
+        }
+      }
+    }
+  }
+
   async setup() {
     if (!this.jwt) await this.authenticate();
     this.isSetup = true;
@@ -216,17 +229,12 @@ export default class Veil {
         ...options
       }
     };
-    while (true) {
-      try {
-        const url = `${this.apiHost}/api/v1/orders`;
-        const order: Order = await this.fetch(url, params, "POST");
-        return order;
-      } catch (e) {
-        if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
-          await this.authenticate();
-        } else throw e;
-      }
-    }
+
+    const url = `${this.apiHost}/api/v1/orders`;
+    const order: Order = await this.retry(() =>
+      this.fetch(url, params, "POST")
+    );
+    return order;
   }
 
   async createQuote(
@@ -261,33 +269,19 @@ export default class Veil {
       }
     };
 
-    while (true) {
-      try {
-        const url = `${this.apiHost}/api/v1/quotes`;
-        const quote: Quote = await this.fetch(url, params, "POST");
-        return quote;
-      } catch (e) {
-        if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
-          await this.authenticate();
-        } else throw e;
-      }
-    }
+    const url = `${this.apiHost}/api/v1/quotes`;
+    const quote: Quote = await this.retry(() =>
+      this.fetch(url, params, "POST")
+    );
+    return quote;
   }
 
   async cancelOrder(uid: string) {
     if (!this.isSetup) await this.setup();
 
-    while (true) {
-      try {
-        const url = `${this.apiHost}/api/v1/orders/${uid}`;
-        const order: Order = await this.fetch(url, {}, "DELETE");
-        return order;
-      } catch (e) {
-        if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
-          await this.authenticate();
-        } else throw e;
-      }
-    }
+    const url = `${this.apiHost}/api/v1/orders/${uid}`;
+    const order: Order = await this.retry(() => this.fetch(url, {}, "DELETE"));
+    return order;
   }
 
   async getUserOrders(
@@ -299,20 +293,14 @@ export default class Veil {
   ) {
     if (!this.isSetup) await this.setup();
 
-    while (true) {
-      try {
-        const url = `${this.apiHost}/api/v1/orders`;
-        const page: Page<Order> = await this.fetch(url, {
-          ...options,
-          market: market.slug
-        });
-        return page;
-      } catch (e) {
-        if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
-          await this.authenticate();
-        } else throw e;
-      }
-    }
+    const url = `${this.apiHost}/api/v1/orders`;
+    const page: Page<Order> = await this.retry(() =>
+      this.fetch(url, {
+        ...options,
+        market: market.slug
+      })
+    );
+    return page;
   }
 
   async getBids(
@@ -386,18 +374,10 @@ export default class Veil {
     return market;
   }
 
-  async getMarketBalances(slug: string) {
+  async getMarketBalances(market: Market) {
     if (!this.isSetup) await this.setup();
-    while (true) {
-      try {
-        const url = `${this.apiHost}/api/v1/markets/${slug}/balances`;
-        const balances: MarketBalances = await this.fetch(url);
-        return balances;
-      } catch (e) {
-        if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
-          await this.authenticate();
-        } else throw e;
-      }
-    }
+    const url = `${this.apiHost}/api/v1/markets/${market.slug}/balances`;
+    const balances: MarketBalances = await this.retry(() => this.fetch(url));
+    return balances;
   }
 }
