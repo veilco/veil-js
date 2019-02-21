@@ -291,7 +291,7 @@ Example response:
 }
 ```
 
-### `veil.getMarketBalances(slug: string)`
+### `veil.getMarketBalances(market: Market)`
 
 Requires authentication. Returns the market balances for the authenticated user. Example response:
 
