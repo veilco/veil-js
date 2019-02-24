@@ -160,6 +160,8 @@ export default class Veil {
       } catch (e) {
         if (some(e.errors, (err: any) => err.message.match("jwt expired"))) {
           await this.authenticate();
+        } else {
+          throw e;
         }
       }
     }
