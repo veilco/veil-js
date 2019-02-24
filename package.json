@@ -1,6 +1,6 @@
 {
   "name": "veil-js",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Veil API Wrapper",
   "main": "dist/index.js",
   "author": "Veil, Inc.",
