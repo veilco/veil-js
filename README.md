@@ -19,7 +19,12 @@ Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.mark
 You can use the API with or without authenticating using your ethereum address. The constructor has the following signature:
 
 ```typescript
-new Veil(mnemonic?: string, address?: string, apiUrl?: string = 'https://api.kovan.veil.co')
+new Veil(options: {
+  mnemonic?: string,
+  address?: string,
+  apiUrl?: string = 'https://api.kovan.veil.co',
+  provider?: Provider
+})
 ```
 
 Note that the default API is our testnet server. If you want to use mainnet, you must explicitly pass `"https://api.veil.co"` as the third constructor parameter.
@@ -39,7 +44,7 @@ console.log(markets); // { results: [{ slug: "...", ... }], total: 35, ... }
 const mnemonic =
   "unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil";
 const address = "0x5b5eae94bf37ff266955e46fdd38932346cc67e8";
-const veil = new Veil(mnemonic, address);
+const veil = new Veil({ mnemonic, address });
 const myOrders = await veil.getUserOrders(markets[0]);
 ```
 

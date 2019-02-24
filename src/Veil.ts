@@ -34,7 +34,14 @@ export interface Order {
   tokenAmountUnfilled: string;
   status: "open" | "filled" | "canceled";
   tokenType: "short" | "long";
-  fills: OrderFill[];
+  fills: PartialOrderFill[];
+}
+
+export interface PartialOrderFill {
+  uid: string;
+  createdAt: string;
+  status: "pending" | "completed" | "failed";
+  tokenAmount: string;
 }
 
 export interface OrderFill {
@@ -117,6 +124,17 @@ export function encodeParams(params: Object) {
     .join("&");
 }
 
+interface VeilOptions {
+  mnemonic?: string;
+  address?: string;
+  apiHost?: string;
+  provider?: Provider;
+}
+
+const defaultOptions: Partial<VeilOptions> = {
+  apiHost: API_HOST_DEFAULT
+};
+
 export default class Veil {
   provider: Provider;
   apiHost: string;
@@ -125,13 +143,36 @@ export default class Veil {
   isSetup = false;
 
   constructor(
-    mnemonic?: string,
+    mnemonicOrOptions?: string | VeilOptions,
     address?: string,
     apiHost: string = API_HOST_DEFAULT
   ) {
-    if (mnemonic) this.provider = getProvider(mnemonic);
-    if (address) this.address = address.toLowerCase();
-    this.apiHost = apiHost;
+    if (mnemonicOrOptions) {
+      if (typeof mnemonicOrOptions === "string") {
+        this.provider = getProvider(mnemonicOrOptions);
+      } else if (typeof mnemonicOrOptions === "object") {
+        // We have an options object
+        const options = { ...defaultOptions, ...mnemonicOrOptions };
+        if (options.mnemonic) this.provider = getProvider(options.mnemonic);
+        if (options.provider) this.provider = options.provider;
+        if (options.address) this.address = options.address;
+        if (options.apiHost) this.apiHost = options.apiHost;
+      } else {
+        throw new Error("Invalid options object passed to Veil()");
+      }
+    }
+    if (address) {
+      console.warn(
+        "Passing an address as the second argument to Veil() is deprecated. Please use the options object instead."
+      );
+      this.address = address.toLowerCase();
+    }
+    if (apiHost) {
+      console.warn(
+        "Passing an apiHost as the third argument to Veil() is deprecated. Please use the options object instead."
+      );
+      this.apiHost = apiHost;
+    }
   }
 
   async fetch(
@@ -177,7 +218,7 @@ export default class Veil {
   async authenticate() {
     if (!this.provider || !this.address)
       throw new VeilError([
-        "You tried calling an authenticated method without passing a mnemonic and address to the Veil constructor"
+        "You tried calling an authenticated method without passing an address and a mnemonic or provider to the Veil constructor"
       ]);
     const challenge = await this.createSessionChallenge();
     const web3 = new Web3Wrapper(this.provider);
