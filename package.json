@@ -1,6 +1,6 @@
 {
   "name": "veil-js",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Veil API Wrapper",
   "main": "dist/index.js",
   "author": "Veil, Inc.",
@@ -12,10 +12,11 @@
     "postinstall": "rm -f node_modules/web3/index.d.ts"
   },
   "dependencies": {
-    "@0x/order-utils": "^6.1.0",
-    "@0x/subproviders": "^3.0.3",
-    "@0x/utils": "^4.1.0",
-    "@0x/web3-wrapper": "^5.0.0",
+    "@0x/order-utils": "^7.0.0",
+    "@0x/subproviders": "^4.0.0",
+    "@0x/utils": "^4.2.0",
+    "@0x/web3-wrapper": "^6.0.0",
+    "ethereum-types": "^2.1.0",
     "ethers": "^4.0.1",
     "humps": "^2.0.1",
     "lodash": "^4.17.11",

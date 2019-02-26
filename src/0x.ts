@@ -3,9 +3,9 @@ import {
   signatureUtils,
   orderHashUtils,
   Order,
-  SignedOrder,
-  Provider
+  SignedOrder
 } from "@0x/order-utils";
+import { Provider } from "ethereum-types";
 
 export async function signOrder(
   provider: Provider,
