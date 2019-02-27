@@ -23,6 +23,7 @@ export interface Market {
   index: string;
   limitPrice: string;
   type: string;
+  channel: string;
 }
 
 export interface Order {
