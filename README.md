@@ -187,11 +187,34 @@ Fetches the order fill history in a market for tokens of type `tokenType` (LONG 
 }
 ```
 
-### `veil.createQuote(market: Market, side: "buy" | "sell", tokenType: "long" | "short", amount: number | BigNumber, price: number | BigNumber)`
+### `veil.createQuote(market: Market, side: "buy" | "sell", tokenType: "long" | "short", params: MarketOrderParams | LimitOrderParams)`
 
 Creates a Veil quote, which is used to calculate fees and generate an unsigned 0x order, which is required to create a Veil order.
 
-> **Note**: `price` is a number between 0 and `market.numTicks`, which is always 10000 for Veil markets. A price of 6000 is equivalent to 0.6 ETH/share.
+The `params` argument must be one of the following types (depending on whether you wish to create a market order or a limit order):
+
+```typescript
+// Create a market order with particular amount of ETH
+interface MarketOrderCurrencyParams {
+  type: "market";
+  currencyAmount: number | BigNumber;
+}
+
+// Create a market order for a particular amount of tokens
+interface MarketOrderTokenParams {
+  type: "market";
+  tokenAmount: number | BigNumber;
+}
+
+// Create a limit order
+interface LimitOrderParams {
+  type: "limit";
+  tokenAmount: number | BigNumber;
+  price: number | BigNumber;
+}
+```
+
+> **Note**: when passing a `BigNumber` instance, `price` is a number between 0 and `market.numTicks`, which is normally 10000 for Veil markets (except scalars). A price of 6000 is equivalent to 0.6 ETH/share.
 
 Example response:
 
