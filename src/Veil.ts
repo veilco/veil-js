@@ -155,7 +155,7 @@ const defaultOptions: Partial<VeilOptions> = {
 
 export default class Veil {
   provider: Provider;
-  apiHost: string;
+  apiHost: string = API_HOST_DEFAULT;
   address: string;
   jwt: string;
   isSetup = false;
@@ -163,7 +163,7 @@ export default class Veil {
   constructor(
     mnemonicOrOptions?: string | VeilOptions,
     address?: string,
-    apiHost: string = API_HOST_DEFAULT
+    apiHost?: string
   ) {
     if (mnemonicOrOptions) {
       if (typeof mnemonicOrOptions === "string") {
