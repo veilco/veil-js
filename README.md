@@ -8,6 +8,10 @@ Install:
 yarn add veil-js
 ```
 
+# v1 Docs
+
+_Note: these are the docs for version 2.0.0, which makes some changes to the `Veil` constructor and the `createQuote` method._ For v1 docs, please [go here](https://github.com/veilco/veil-js/blob/dacc4e388494a528e210a615f315a511409c7367/README.md).
+
 ## Questions?
 
 Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.market`. If you encounter a problem using `veil-js`, feel free to [open an issue](https://github.com/veilco/veil-js/issues).
