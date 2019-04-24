@@ -306,6 +306,8 @@ export default class Veil {
     tokenType: "long" | "short",
     params: LimitOrderParams | MarketOrderParams
   ) {
+    if (params.type !== "limit" && params.type !== "market")
+      throw new Error("Type (market or limit) is required to create a quote");
     if (!this.isSetup) await this.setup();
     const token = tokenType === "long" ? market.longToken : market.shortToken;
 
