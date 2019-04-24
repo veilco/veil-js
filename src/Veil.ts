@@ -34,7 +34,14 @@ export interface Order {
   tokenAmountUnfilled: string;
   status: "open" | "filled" | "canceled";
   tokenType: "short" | "long";
-  fills: OrderFill[];
+  fills: PartialOrderFill[];
+}
+
+export interface PartialOrderFill {
+  uid: string;
+  createdAt: string;
+  status: "pending" | "completed" | "failed";
+  tokenAmount: string;
 }
 
 export interface OrderFill {
@@ -85,7 +92,25 @@ export interface MarketBalances {
   etherBalance: string;
 }
 
-const API_HOST_DEFAULT = "https://api.kovan.veil.market";
+interface LimitOrderParams {
+  type: "limit";
+  price: number | BigNumber;
+  tokenAmount: number | BigNumber;
+}
+
+interface MarketOrderCurrencyParams {
+  type: "market";
+  currencyAmount: number | BigNumber;
+}
+
+interface MarketOrderTokenParams {
+  type: "market";
+  tokenAmount: number | BigNumber;
+}
+
+type MarketOrderParams = MarketOrderCurrencyParams | MarketOrderTokenParams;
+
+const API_HOST_DEFAULT = "https://api.kovan.veil.co";
 
 const TEN_18 = new BigNumber(10).pow(18);
 export function toWei(amount: number) {
@@ -117,21 +142,55 @@ export function encodeParams(params: Object) {
     .join("&");
 }
 
+interface VeilOptions {
+  mnemonic?: string;
+  address?: string;
+  apiHost?: string;
+  provider?: Provider;
+}
+
+const defaultOptions: Partial<VeilOptions> = {
+  apiHost: API_HOST_DEFAULT
+};
+
 export default class Veil {
   provider: Provider;
-  apiHost: string;
+  apiHost: string = API_HOST_DEFAULT;
   address: string;
   jwt: string;
   isSetup = false;
 
   constructor(
-    mnemonic?: string,
+    mnemonicOrOptions?: string | VeilOptions,
     address?: string,
-    apiHost: string = API_HOST_DEFAULT
+    apiHost?: string
   ) {
-    if (mnemonic) this.provider = getProvider(mnemonic);
-    if (address) this.address = address.toLowerCase();
-    this.apiHost = apiHost;
+    if (mnemonicOrOptions) {
+      if (typeof mnemonicOrOptions === "string") {
+        this.provider = getProvider(mnemonicOrOptions);
+      } else if (typeof mnemonicOrOptions === "object") {
+        // We have an options object
+        const options = { ...defaultOptions, ...mnemonicOrOptions };
+        if (options.mnemonic) this.provider = getProvider(options.mnemonic);
+        if (options.provider) this.provider = options.provider;
+        if (options.address) this.address = options.address;
+        if (options.apiHost) this.apiHost = options.apiHost;
+      } else {
+        throw new Error("Invalid options object passed to Veil()");
+      }
+    }
+    if (address) {
+      console.warn(
+        "Passing an address as the second argument to Veil() is deprecated. Please use the options object instead."
+      );
+      this.address = address.toLowerCase();
+    }
+    if (apiHost) {
+      console.warn(
+        "Passing an apiHost as the third argument to Veil() is deprecated. Please use the options object instead."
+      );
+      this.apiHost = apiHost;
+    }
   }
 
   async fetch(
@@ -177,7 +236,7 @@ export default class Veil {
   async authenticate() {
     if (!this.provider || !this.address)
       throw new VeilError([
-        "You tried calling an authenticated method without passing a mnemonic and address to the Veil constructor"
+        "You tried calling an authenticated method without passing an address and a mnemonic or provider to the Veil constructor"
       ]);
     const challenge = await this.createSessionChallenge();
     const web3 = new Web3Wrapper(this.provider);
@@ -245,37 +304,76 @@ export default class Veil {
     market: Market,
     side: "buy" | "sell",
     tokenType: "long" | "short",
-    amount: number | BigNumber,
-    price: number | BigNumber
+    params: LimitOrderParams | MarketOrderParams
   ) {
     if (!this.isSetup) await this.setup();
-
-    const zero = new BigNumber(0);
-    const numTicks = new BigNumber(market.numTicks);
-    if (typeof amount === "number") amount = toShares(amount, market.numTicks);
-    amount = amount.decimalPlaces(0);
-
-    if (typeof price === "number")
-      price = new BigNumber(price.toString()).times(numTicks);
-    if (price.lt(zero)) price = zero;
-    if (price.gt(numTicks)) price = numTicks;
-    price = price.decimalPlaces(0);
-
     const token = tokenType === "long" ? market.longToken : market.shortToken;
 
-    const params = {
-      quote: {
-        side,
-        token,
-        tokenAmount: amount.toString(),
-        price: price.toString(),
-        type: "limit"
-      }
+    interface QuoteInput {
+      side: "buy" | "sell";
+      token: string;
+      type: "limit" | "market";
+      price?: string;
+      tokenAmount?: string;
+      currencyAmount?: string;
+    }
+    let quoteParams: Partial<QuoteInput> = {
+      side,
+      token
     };
+
+    if (params.type === "limit") {
+      const zero = new BigNumber(0);
+      const numTicks = new BigNumber(market.numTicks);
+      let tokenAmount = params.tokenAmount;
+      let price = params.price;
+      if (typeof tokenAmount === "number")
+        tokenAmount = toShares(tokenAmount, market.numTicks);
+      tokenAmount = tokenAmount.decimalPlaces(0);
+
+      if (typeof price === "number")
+        price = new BigNumber(price.toString()).times(numTicks);
+      if (price.lt(zero)) price = zero;
+      if (price.gt(numTicks)) price = numTicks;
+      price = price.decimalPlaces(0);
+
+      quoteParams = {
+        ...quoteParams,
+        price: price.toString(),
+        tokenAmount: tokenAmount.toString(),
+        type: "limit"
+      };
+    } else {
+      if ("currencyAmount" in params) {
+        let currencyAmount = params.currencyAmount;
+        if (typeof currencyAmount === "number")
+          currencyAmount = toWei(currencyAmount);
+        currencyAmount = currencyAmount.decimalPlaces(0);
+        quoteParams = {
+          ...quoteParams,
+          currencyAmount: currencyAmount.toString(),
+          type: "market"
+        };
+      } else {
+        if (!params.tokenAmount)
+          throw new Error(
+            "Either tokenAmount or currencyAmount is required to create a market order"
+          );
+        let tokenAmount = params.tokenAmount;
+        if (typeof tokenAmount === "number")
+          tokenAmount = toShares(tokenAmount, market.numTicks);
+        tokenAmount = tokenAmount.decimalPlaces(0);
+        quoteParams = {
+          ...quoteParams,
+          tokenAmount: tokenAmount.toString(),
+          type: "market"
+        };
+      }
+    }
 
     const url = `${this.apiHost}/api/v1/quotes`;
     const quote: Quote = await this.retry(() =>
-      this.fetch(url, params, "POST")
+      this.fetch(url, { quote: quoteParams }, "POST")
     );
     return quote;
   }

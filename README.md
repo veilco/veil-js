@@ -8,6 +8,10 @@ Install:
 yarn add veil-js
 ```
 
+# v1 Docs
+
+_Note: these are the docs for version 2.0.0, which makes some changes to the `Veil` constructor and the `createQuote` method._ For v1 docs, please [go here](https://github.com/veilco/veil-js/blob/dacc4e388494a528e210a615f315a511409c7367/README.md).
+
 ## Questions?
 
 Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.market`. If you encounter a problem using `veil-js`, feel free to [open an issue](https://github.com/veilco/veil-js/issues).
@@ -19,7 +23,12 @@ Join us on [Discord](https://discord.gg/aBfTCVU) or email us at `hello@veil.mark
 You can use the API with or without authenticating using your ethereum address. The constructor has the following signature:
 
 ```typescript
-new Veil(mnemonic?: string, address?: string, apiUrl?: string = 'https://api.kovan.veil.co')
+new Veil(options: {
+  mnemonic?: string,
+  address?: string,
+  apiUrl?: string = 'https://api.kovan.veil.co',
+  provider?: Provider
+})
 ```
 
 Note that the default API is our testnet server. If you want to use mainnet, you must explicitly pass `"https://api.veil.co"` as the third constructor parameter.
@@ -39,7 +48,7 @@ console.log(markets); // { results: [{ slug: "...", ... }], total: 35, ... }
 const mnemonic =
   "unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil unveil";
 const address = "0x5b5eae94bf37ff266955e46fdd38932346cc67e8";
-const veil = new Veil(mnemonic, address);
+const veil = new Veil({ mnemonic, address });
 const myOrders = await veil.getUserOrders(markets[0]);
 ```
 
@@ -182,11 +191,34 @@ Fetches the order fill history in a market for tokens of type `tokenType` (LONG 
 }
 ```
 
-### `veil.createQuote(market: Market, side: "buy" | "sell", tokenType: "long" | "short", amount: number | BigNumber, price: number | BigNumber)`
+### `veil.createQuote(market: Market, side: "buy" | "sell", tokenType: "long" | "short", params: MarketOrderParams | LimitOrderParams)`
 
 Creates a Veil quote, which is used to calculate fees and generate an unsigned 0x order, which is required to create a Veil order.
 
-> **Note**: `price` is a number between 0 and `market.numTicks`, which is always 10000 for Veil markets. A price of 6000 is equivalent to 0.6 ETH/share.
+The `params` argument must be one of the following types (depending on whether you wish to create a market order or a limit order):
+
+```typescript
+// Create a market order with particular amount of ETH
+interface MarketOrderCurrencyParams {
+  type: "market";
+  currencyAmount: number | BigNumber;
+}
+
+// Create a market order for a particular amount of tokens
+interface MarketOrderTokenParams {
+  type: "market";
+  tokenAmount: number | BigNumber;
+}
+
+// Create a limit order
+interface LimitOrderParams {
+  type: "limit";
+  tokenAmount: number | BigNumber;
+  price: number | BigNumber;
+}
+```
+
+> **Note**: when passing a `BigNumber` instance, `price` is a number between 0 and `market.numTicks`, which is normally 10000 for Veil markets (except scalars). A price of 6000 is equivalent to 0.6 ETH/share.
 
 Example response:
 
